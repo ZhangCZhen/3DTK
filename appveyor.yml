@@ -31,8 +31,12 @@ init:
 build_script:
  - mkdir C:\slam6d
  - cmd: C:\Python36-x64\python.exe C:\projects\3dtk\windows\timeout.py 4800 C:\projects\3dtk\windows\build.cmd C:\projects\3dtk C:\slam6d
-cache: c:\tools\vcpkg\installed\
+ - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 #cache: c:\tools\vcpkg\installed\ -> appveyor.yml, windows/build.cmd
+cache:
+ - c:\tools\vcpkg\installed\
+# pacman cache would exceed 1,048,576,000
+# - C:\msys64\var\cache\pacman\pkg\
 notifications:
   - provider: Email
     to:

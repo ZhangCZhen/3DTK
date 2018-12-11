@@ -17,7 +17,7 @@
 #ifndef __GLOBALS_ICC__
 #define __GLOBALS_ICC__
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <windows.h>
 #define  _USE_MATH_DEFINES
 #include <math.h>

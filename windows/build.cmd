@@ -1,3 +1,62 @@
+:: reduce time required to install packages by disabling pacman's disk space checking
+C:\msys64\usr\bin\sed -i "s/^CheckSpace/#CheckSpace/g" C:\msys64\etc\pacman.conf
+
+:: Update core packages
+call:pacman -Syyuu
+
+:: Update non-core packages
+call:pacman -Suu
+
+:: Install required MSYS2 packages
+call:pacman -S --needed base-devel
+
+set MINGW_PACKAGE_PREFIX=mingw-w64-x86_64
+
+echo MINGW_PACKAGE_PREFIX: %MINGW_PACKAGE_PREFIX%
+echo APPVEYOR_BUILD_FOLDER: %APPVEYOR_BUILD_FOLDER%
+
+call:pacman -S --needed ^
+	%MINGW_PACKAGE_PREFIX%-toolchain ^
+	%MINGW_PACKAGE_PREFIX%-cmake ^
+	%MINGW_PACKAGE_PREFIX%-boost ^
+	%MINGW_PACKAGE_PREFIX%-suitesparse ^
+	%MINGW_PACKAGE_PREFIX%-libpng ^
+	%MINGW_PACKAGE_PREFIX%-freeglut ^
+	%MINGW_PACKAGE_PREFIX%-wxWidgets ^
+	%MINGW_PACKAGE_PREFIX%-opencv ^
+	%MINGW_PACKAGE_PREFIX%-qt5 ^
+	%MINGW_PACKAGE_PREFIX%-eigen3 ^
+
+
+:: Delete unused packages to reduce space used in the Appveyor cache
+call:pacman -Sc
+
+:: Workaround for CMake not wanting sh.exe on PATH for MinGW
+set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
+:: set PATH=C:\MinGW\bin;%PATH%
+:: set PATH=C:\msys64\mingw64\x86_64-w64-mingw32\bin;%PATH%
+set PATH=C:\msys64\mingw64\bin;%PATH%
+
+echo PATH: %PATH%
+
+cd %APPVEYOR_BUILD_FOLDER%
+md build
+cd build
+cmake -G "MinGW Makefiles" ^
+	-D WITH_LIBCONFIG=OFF ^
+	-D WITH_CGAL=OFF ^
+	-D WITH_LIBZIP=OFF ^
+	-D WITH_PYTHON=OFF ^
+	-D WITH_APRILTAG=OFF ^
+	-D WITH_LASLIB=OFF ^
+	-D WITH_WXWIDGETS=OFF ^
+	-D WITH_QT=OFF ^
+	-D WITH_OPENCV=OFF ^
+	..
+cmake --build .
+
+exit 0
+
 @echo off
 :: this script is to build 3dtk on 64bit windows with visual studio 2017
 :: if you require support for 32bit windows, please send patches
@@ -308,6 +367,15 @@ goto:eof
 :unzip
 	powershell -command ^
 		"Expand-Archive """"%~1"""" -Force -DestinationPath """"%~2"""""
+	if %ERRORLEVEL% GEQ 1 (
+		exit /B 1
+	)
+	exit /B 0
+
+:: run pacman in bash wrapper so that installation scripts can find all
+:: necessary binaries
+:pacman
+	C:\msys64\usr\bin\bash -lc "pacman --noconfirm --noprogressbar %*"
 	if %ERRORLEVEL% GEQ 1 (
 		exit /B 1
 	)
